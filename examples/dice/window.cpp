@@ -1,6 +1,5 @@
 #include "window.hpp"
 
-#include <imgui.h>
 #include <cppitertools/itertools.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <fmt/core.h>
@@ -31,74 +30,95 @@ void Window::onEvent(SDL_Event const &event) {
   }
 
   if (event.type == SDL_MOUSEWHEEL) {
-    m_zoom += (event.wheel.y > 0 ? -1.0f : +1.0f) / 5.0f;
+    m_zoom += (event.wheel.y > 0 ? -1.0f : 1.0f) / 5.0f;
     m_zoom = glm::clamp(m_zoom, -1.5f, 10.0f);
   }
 
 }
 
 void Window::onCreate() {
-  abcg::glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-  abcg::glEnable(GL_DEPTH_TEST);
-
   auto const assetsPath{abcg::Application::getAssetsPath()};
 
-  for (const auto& name : m_shaderNames) {
-    const auto path{assetsPath + "shaders/" + name};
-    
-    const auto program = 
-      abcg::createOpenGLProgram({{.source = path + ".vert",
-                                  .stage = abcg::ShaderStage::Vertex},
-                                 {.source = path + ".frag",
-                                  .stage = abcg::ShaderStage::Fragment}});
+  abcg::glClearColor(0, 0, 0, 1);
+  abcg::glEnable(GL_DEPTH_TEST);
 
+  // Create programs
+  for (auto const &name : m_shaderNames) {
+    auto const path{assetsPath + "shaders/" + name};
+    auto const program{abcg::createOpenGLProgram(
+        {{.source = path + ".vert", .stage = abcg::ShaderStage::Vertex},
+         {.source = path + ".frag", .stage = abcg::ShaderStage::Fragment}})};
     m_programs.push_back(program);
   }
 
+  // Load default model
   loadModel(assetsPath + "dice.obj");
-  m_mappingMode = 0;
+  m_mappingMode = 0; // "From mesh" option
+
+  // Initial trackball spin
+  // m_trackBallModel.setAxis(glm::normalize(glm::vec3(1, 1, 1)));
+  // m_trackBallModel.setVelocity(0.1f);
+
   m_dices.create(quantity);
 }
 
 void Window::loadModel(std::string_view path) {
+  auto const assetsPath{abcg::Application::getAssetsPath()};
+
   m_dices.destroy();
 
-  auto const assetsPath{abcg::Application::getAssetsPath()};
   m_dices.loadDiffuseTexture(assetsPath + "maps/dice.jpg");
   m_dices.loadObj(path);
   m_dices.setupVAO(m_programs.at(m_currentProgramIndex));
+  m_trianglesToDraw = m_dices.getNumTriangles();
+
+  // Use material properties from the loaded model
+  m_Ka = m_dices.getKa();
+  m_Kd = m_dices.getKd();
+  m_Ks = m_dices.getKs();
+  m_shininess = m_dices.getShininess();
 }
 
 void Window::onPaint() {
   update();
 
   abcg::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
   abcg::glViewport(0, 0, m_viewportSize.x, m_viewportSize.y);
 
-  const auto program{m_programs.at(m_currentProgramIndex)};
+  // Use currently selected program
+  auto const program{m_programs.at(m_currentProgramIndex)};
   abcg::glUseProgram(program);
 
-  const GLint viewMatrixLoc{abcg::glGetUniformLocation(program, "viewMatrix")};
-  const GLint projMatrixLoc{abcg::glGetUniformLocation(program, "projMatrix")};
-  const GLint modelMatrixLoc{abcg::glGetUniformLocation(program, "modelMatrix")};
-  const GLint normalMatrixLoc{abcg::glGetUniformLocation(program, "normalMatrix")};
-  const GLint lightDirLoc{abcg::glGetUniformLocation(program, "lightDirWorldSpace")};
-  const GLint IaLoc{abcg::glGetUniformLocation(program, "Ia")};
-  const GLint IdLoc{abcg::glGetUniformLocation(program, "Id")};
-  const GLint IsLoc{abcg::glGetUniformLocation(program, "Is")};
-  const GLint diffuseTexLoc{abcg::glGetUniformLocation(program, "diffuseTex")};
-  const GLint mappingModeLoc{abcg::glGetUniformLocation(program, "mappingMode")}; 
+  // Get location of uniform variables
+  auto const viewMatrixLoc{abcg::glGetUniformLocation(program, "viewMatrix")};
+  auto const projMatrixLoc{abcg::glGetUniformLocation(program, "projMatrix")};
+  auto const modelMatrixLoc{abcg::glGetUniformLocation(program, "modelMatrix")};
+  auto const normalMatrixLoc{
+      abcg::glGetUniformLocation(program, "normalMatrix")};
+  auto const lightDirLoc{
+      abcg::glGetUniformLocation(program, "lightDirWorldSpace")};
+  auto const shininessLoc{abcg::glGetUniformLocation(program, "shininess")};
+  auto const IaLoc{abcg::glGetUniformLocation(program, "Ia")};
+  auto const IdLoc{abcg::glGetUniformLocation(program, "Id")};
+  auto const IsLoc{abcg::glGetUniformLocation(program, "Is")};
+  auto const KaLoc{abcg::glGetUniformLocation(program, "Ka")};
+  auto const KdLoc{abcg::glGetUniformLocation(program, "Kd")};
+  auto const KsLoc{abcg::glGetUniformLocation(program, "Ks")};
+  auto const diffuseTexLoc{abcg::glGetUniformLocation(program, "diffuseTex")};
+  auto const mappingModeLoc{abcg::glGetUniformLocation(program, "mappingMode")};
 
+  // Set uniform variables that have the same value for every model
   abcg::glUniformMatrix4fv(viewMatrixLoc, 1, GL_FALSE, &m_viewMatrix[0][0]);
   abcg::glUniformMatrix4fv(projMatrixLoc, 1, GL_FALSE, &m_projMatrix[0][0]);
+  abcg::glUniform1i(diffuseTexLoc, 0);
+  abcg::glUniform1i(mappingModeLoc, m_mappingMode);
 
-  const auto lightDirRotated{m_trackBallModel.getRotation() * m_lightDir};
+  auto const lightDirRotated{m_trackBallModel.getRotation() * m_lightDir};
   abcg::glUniform4fv(lightDirLoc, 1, &lightDirRotated.x);
   abcg::glUniform4fv(IaLoc, 1, &m_Ia.x);
   abcg::glUniform4fv(IdLoc, 1, &m_Id.x);
   abcg::glUniform4fv(IsLoc, 1, &m_Is.x);
-  abcg::glUniform1i(diffuseTexLoc, 0);
-  abcg::glUniform1i(mappingModeLoc, m_mappingMode);
   
   for(auto &dice : m_dices.dices){
     dice.modelMatrix = glm::translate(m_modelMatrix, dice.position);
@@ -108,11 +128,16 @@ void Window::onPaint() {
     dice.modelMatrix = glm::rotate(dice.modelMatrix, dice.rotationAngle.z, glm::vec3(0.0f, 0.0f, 1.0f));
 
     abcg::glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, &dice.modelMatrix[0][0]);
-    const auto modelViewMatrix{glm::mat3(m_viewMatrix * dice.modelMatrix)};
-    glm::mat3 normalMatrix{glm::inverseTranspose(modelViewMatrix)};
+    auto const modelViewMatrix{glm::mat3(m_viewMatrix * dice.modelMatrix)};
+    auto const normalMatrix{glm::inverseTranspose(modelViewMatrix)};
     abcg::glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, &normalMatrix[0][0]);
 
-    m_dices.render();
+    abcg::glUniform4fv(KaLoc, 1, &m_Ka.x);
+    abcg::glUniform4fv(KdLoc, 1, &m_Kd.x);
+    abcg::glUniform4fv(KsLoc, 1, &m_Ks.x);
+    abcg::glUniform1f(shininessLoc, m_shininess);
+
+    m_dices.render(m_trianglesToDraw);
   }
 
   abcg::glUseProgram(0);
@@ -181,11 +206,13 @@ void Window::update() {
       glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f + m_zoom),
                   glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-  const auto aspect{static_cast<float>(m_viewportSize.x) /
-                        static_cast<float>(m_viewportSize.y)};
+  auto const aspect{gsl::narrow<float>(m_viewportSize.x) /
+                        gsl::narrow<float>(m_viewportSize.y)};
   m_projMatrix =
-      glm::perspective(glm::radians(45.0f), aspect, 0.1f, 25.0f);
+            glm::perspective(glm::radians(45.0f), aspect, 0.1f, 25.0f);
 
-  abcg::glDisable(GL_CULL_FACE);
+  // abcg::glDisable(GL_CULL_FACE);
   abcg::glFrontFace(GL_CCW);
+
+  // m_dices.setupVAO(m_programs.at(m_currentProgramIndex));
 }

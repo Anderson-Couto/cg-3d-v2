@@ -2,20 +2,33 @@
 
 layout(location = 0) in vec3 inPosition;
 layout(location = 1) in vec3 inNormal;
+layout(location = 2) in vec2 inTexCoord;
 
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projMatrix;
 uniform mat3 normalMatrix;
 
-out vec4 fragColor;
+uniform vec4 lightDirWorldSpace;
+
+out vec3 fragV;
+out vec3 fragL;
+out vec3 fragN;
+out vec2 fragTexCoord;
+out vec3 fragPObj;
+out vec3 fragNObj;
 
 void main() {
-  mat4 MVP = projMatrix * viewMatrix * modelMatrix;
+  vec3 P = (viewMatrix * modelMatrix * vec4(inPosition, 1.0)).xyz;
+  vec3 N = normalMatrix * inNormal;
+  vec3 L = -(viewMatrix * lightDirWorldSpace).xyz;
 
-  gl_Position = MVP * vec4(inPosition, 1.0);
+  fragL = L;
+  fragV = -P;
+  fragN = N;
+  fragTexCoord = inTexCoord;
+  fragPObj = inPosition;
+  fragNObj = inNormal;
 
-  vec3 N = inNormal;
-
-  fragColor = vec4((N + 1.0) / 2.0, 1.0);
+  gl_Position = projMatrix * vec4(P, 1.0);
 }
