@@ -54,43 +54,50 @@ Aqui ocorre apenas a gestão do input de rolar o dado. Não há mudanças em rel
 A classe `Window` recebeu poucas alterações de estrutura. As grandes mudanças foram a criação da função onUpdate(), responsável por realizar atualizações em matrizes da aplicação e fazer chamadas à função update da classe dices, a inclusão de variáveis relacionadas ao Trackball, para manipulação de ambiente, e inclusão de variáveis relacionadas à iluminação e renderização dos objetos em tela. Abaixo segue um resumo das funcionalidades:
 
 - Manipulação de Eventos (onEvent):
-- - Rastreamento do movimento do mouse para controlar a rotação da câmera (usando uma trackball).
-- - Ativação da rotação dos dados ao pressionar a barra de espaço.
-- - Resposta a eventos de pressionar e soltar o botão esquerdo do mouse para interação com a trackball.
-- - Zoom com a roda do mouse.
+
+  - Rastreamento do movimento do mouse para controlar a rotação da câmera (usando uma trackball).
+  - Ativação da rotação dos dados ao pressionar a barra de espaço.
+  - Resposta a eventos de pressionar e soltar o botão esquerdo do mouse para interação com a trackball.
+  - Zoom com a roda do mouse.
 
 - Inicialização (onCreate):
-- - Configuração inicial do OpenGL.
-- - Compilação e criação de programas de shader a partir de arquivos no sistema de arquivos.
-- - Carregamento de um modelo 3D padrão ("dice.obj").
-- - Inicialização da trackball para rotação.
-- - Criação de instâncias de dados (dices) e configuração de parâmetros iniciais.
+
+  - Configuração inicial do OpenGL.
+  - Compilação e criação de programas de shader a partir de arquivos no sistema de arquivos.
+  - Carregamento de um modelo 3D padrão ("dice.obj").
+  - Inicialização da trackball para rotação.
+  - Criação de instâncias de dados (dices) e configuração de parâmetros iniciais.
 
 - Atualização (onUpdate):
-- - Atualização da matriz de visualização e projeção da câmera.
-- - Atualização da rotação da trackball.
-- - Atualização dos dados (dices).
+
+  - Atualização da matriz de visualização e projeção da câmera.
+  - Atualização da rotação da trackball.
+  - Atualização dos dados (dices).
 
 - Renderização (onPaint):
-- - Limpeza do buffer de cor e do buffer de profundidade.
-- - Definição de uniformes compartilhados entre todos os modelos (iluminação, texturas, etc.).
-- - Renderização de cada instância de dado (dice) no loop.
+
+  - Limpeza do buffer de cor e do buffer de profundidade.
+  - Definição de uniformes compartilhados entre todos os modelos (iluminação, texturas, etc.).
+  - Renderização de cada instância de dado (dice) no loop.
 
 - Interface do Usuário (onPaintUI):
-- - Utilização da biblioteca ImGui para criar uma interface gráfica simples.
-- - Botão para rolar todos os dados.
-- - Combo box para selecionar o número de dados.
+
+  - Utilização da biblioteca ImGui para criar uma interface gráfica simples.
+  - Botão para rolar todos os dados.
+  - Combo box para selecionar o número de dados.
 
 - Redimensionamento da Janela (onResize):
-- - Atualização do tamanho da viewport ao redimensionar a janela.
+
+  - Atualização do tamanho da viewport ao redimensionar a janela.
 
 - Carregamento de Modelo (loadModel):
-- - Limpeza de dados existentes.
-- - Carregamento de um novo modelo a partir de um arquivo (por padrão, "dice.obj").
-- - Configuração dos parâmetros de material com base no modelo carregado.
+
+  - Limpeza de dados existentes.
+  - Carregamento de um novo modelo a partir de um arquivo (por padrão, "dice.obj").
+  - Configuração dos parâmetros de material com base no modelo carregado.
 
 - Destruir Recursos (onDestroy):
-- - Liberação de recursos OpenGL e limpeza dos dados dos dados (dices).
+  - Liberação de recursos OpenGL e limpeza dos dados dos dados (dices).
 
 ### trackball.hpp e trackball.cpp
 
@@ -101,9 +108,9 @@ A classe `Window` recebeu poucas alterações de estrutura. As grandes mudanças
 A classe `Dices` recebeu a base da classe `Model`, presente no projeto `viewer4`. Abaixo segue um resumo das funcionalidades próprias da classe:
 
 - Criação de Dados (create):
-- - Gera uma semente para o gerador de números aleatórios.
-- - Inicializa um vetor de dados (m_dices) com a quantidade especificada.
-- - Cada dado é inicializado chamando inicializarDado.
+  - Gera uma semente para o gerador de números aleatórios.
+  - Inicializa um vetor de dados (m_dices) com a quantidade especificada.
+  - Cada dado é inicializado chamando inicializarDado.
 
 ```
 void Dices::create(int quantity) {
@@ -120,7 +127,7 @@ void Dices::create(int quantity) {
 ```
 
 - Inicialização de Dado (inicializarDado):
-- - Inicializa um dado com uma posição aleatória e chama a função jogarDado para iniciar sua rotação.
+  - Inicializa um dado com uma posição aleatória e chama a função jogarDado para iniciar sua rotação.
 
 ```
 Dices::Dice Dices::inicializarDado() {
@@ -135,8 +142,8 @@ Dices::Dice Dices::inicializarDado() {
 ```
 
 - Jogar o Dado (jogarDado):
-- - Configura a rotação inicial e a direção de translação do dado.
-- - Faz a gestão do giro do dado.
+  - Configura a rotação inicial e a direção de translação do dado.
+  - Faz a gestão do giro do dado.
 
 ```
 void Dices::jogarDado(Dice &dice) {
@@ -150,8 +157,8 @@ void Dices::jogarDado(Dice &dice) {
 ```
 
 - Atualização dos Dados (update):
-- - Atualiza a velocidade de rotação dos dados com um decaimento ao longo do tempo.
-- - Atualiza a posição e a rotação dos dados em cada quadro, levando em consideração colisões.
+  - Atualiza a velocidade de rotação dos dados com um decaimento ao longo do tempo.
+  - Atualiza a posição e a rotação dos dados em cada quadro, levando em consideração colisões.
 
 ```
 void Dices::update(float deltaTime) {
@@ -173,7 +180,7 @@ void Dices::update(float deltaTime) {
 ```
 
 - Alterar Spin do Dado (alterarSpin):
-- - Gera um tempo aleatório e uma direção aleatória de rotação para o dado.
+  - Gera um tempo aleatório e uma direção aleatória de rotação para o dado.
 
 ```
 void Dices::alterarSpin(Dice &dice) {
@@ -186,7 +193,7 @@ void Dices::alterarSpin(Dice &dice) {
 ```
 
 - Verificar Colisões (checkCollisions):
-- - Verifica colisões entre os dados e atualiza as posições e rotações em caso de colisão.
+  - Verifica colisões entre os dados e atualiza as posições e rotações em caso de colisão.
 
 ### dice.frag e dice.vert
 
