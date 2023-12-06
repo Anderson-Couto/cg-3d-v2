@@ -17,130 +17,6 @@ template <> struct std::hash<Vertex> {
   }
 };
 
-void Dices::create(int quantity){
-  auto seed{std::chrono::steady_clock::now().time_since_epoch().count()};
-  m_randomEngine.seed(seed);
-
-  dices.clear();
-  dices.resize(quantity);
-
-  for(auto &dice : dices) {
-    dice = inicializarDado();
-  }
-}
-
-Dice Dices::inicializarDado() {
-  Dice dice;
-  std::uniform_real_distribution<float> fdist(-1.0f,1.0f);
-  dice.position = glm::vec3{fdist(m_randomEngine),fdist(m_randomEngine),fdist(m_randomEngine)};
-
-  jogarDado(dice);
-
-  return dice;
-}
-
-void Dices::jogarDado(Dice &dice) {
-  tempoGirandoAleatorio(dice);
-  eixoAlvoAleatorio(dice);
-  direcaoAleatoria(dice);
-  dice.dadoGirando = true;
-}
-
-void Dices::update(float deltaTime) {
-  for(auto &dice : dices) {
-    if(dice.dadoGirando)
-    {
-      checkCollisions(dice);
-      dice.timeLeft -= deltaTime;
-      if(dice.DoRotateAxis.x)
-        dice.rotationAngle.x = glm::wrapAngle(dice.rotationAngle.x + glm::radians(dice.spinSpeed) * dice.timeLeft); 
-      if(dice.DoRotateAxis.y)
-        dice.rotationAngle.y = glm::wrapAngle(dice.rotationAngle.y + glm::radians(dice.spinSpeed) * dice.timeLeft); 
-      if(dice.DoRotateAxis.z)
-        dice.rotationAngle.z = glm::wrapAngle(dice.rotationAngle.z + glm::radians(dice.spinSpeed) * dice.timeLeft); 
-      if(dice.DoTranslateAxis.x != 0)
-        dice.position.x = dice.position.x + dice.spinSpeed * dice.timeLeft * dice.DoTranslateAxis.x * 0.001f; 
-      if(dice.DoTranslateAxis.y != 0)
-        dice.position.y = dice.position.y + dice.spinSpeed * dice.timeLeft * dice.DoTranslateAxis.y * 0.001f; 
-      if(dice.DoTranslateAxis.z != 0)
-        dice.position.z = dice.position.z + dice.spinSpeed * dice.timeLeft * dice.DoTranslateAxis.z * 0.001f;
-    }
-    if(dice.dadoGirando && dice.timeLeft <= 0){
-      dice.dadoGirando = false;
-    }
-  }
-}
-
-void Dices::tempoGirandoAleatorio(Dice &dice){
-  std::uniform_real_distribution<float> fdist(2.0f,7.0f);
-  dice.timeLeft = fdist(m_randomEngine);
-}
-
-void Dices::eixoAlvoAleatorio(Dice &dice){
-  dice.DoRotateAxis = {0, 0, 0};
-  std::uniform_int_distribution<int> idist(0,2);
-  dice.DoRotateAxis[idist(m_randomEngine)] = 1;
-}
-
-void Dices::direcaoAleatoria(Dice &dice){
-  dice.DoTranslateAxis = {0, 0, 0};
-  std::uniform_int_distribution<int> idist(-1,1);
-  dice.DoTranslateAxis = {idist(m_randomEngine),idist(m_randomEngine), idist(m_randomEngine)};
-}
-
-void Dices::checkCollisions(Dice &dice){
-  bool colidiu{false};
-
-  for(auto &other_dice : dices) {
-    if(&other_dice == &dice) continue;
-
-    const auto distance{glm::distance(other_dice.position, dice.position)};
-
-    if (distance > 0.5f) continue;
-
-    if(!dice.dadoColidindo) {
-      dice.dadoColidindo = true;
-      dice.DoTranslateAxis *= -1;
-      colidiu = true;
-    }
-    if(!other_dice.dadoColidindo) {
-      other_dice.dadoColidindo = true;
-      other_dice.DoTranslateAxis = dice.DoTranslateAxis * (-1);
-      tempoGirandoAleatorio(other_dice);
-      eixoAlvoAleatorio(other_dice);
-      other_dice.dadoGirando = true;
-    }
-  }
-  if(!colidiu)
-  {
-    dice.dadoColidindo = false;
-  }
-  
-  if(dice.position.x > 2.5f){
-    dice.DoTranslateAxis.x = -1;
-    colidiu = true;}
-  else if(dice.position.x < -2.5f){
-    dice.DoTranslateAxis.x = 1;
-    colidiu = true;}
-  if(dice.position.y > 2.5f){
-    dice.DoTranslateAxis.y = -1;
-    colidiu = true;}
-  else if(dice.position.y < -2.5f){
-    dice.DoTranslateAxis.y = 1;
-    colidiu = true;}
-  if(dice.position.z > 2.5f){
-    dice.DoTranslateAxis.z = -1;
-    colidiu = true;}
-  else if(dice.position.z < -2.5f){
-    dice.DoTranslateAxis.z = 1;
-    colidiu = true;}
-
-  if(colidiu){
-    tempoGirandoAleatorio(dice);
-    eixoAlvoAleatorio(dice);
-  }
-}
-
 void Dices::computeNormals() {
   // Clear previous vertex normals
   for (auto &vertex : m_vertices) {
@@ -403,4 +279,123 @@ void Dices::destroy(){
   abcg::glDeleteBuffers(1, &m_EBO);
   abcg::glDeleteBuffers(1, &m_VBO);
   abcg::glDeleteVertexArrays(1, &m_VAO);
+}
+
+void Dices::create(int quantity){
+  auto seed{std::chrono::steady_clock::now().time_since_epoch().count()};
+  m_randomEngine.seed(seed);
+
+  m_dices.clear();
+  m_dices.resize(quantity);
+
+  for(auto &dice : m_dices) {
+    dice = inicializarDado();
+  }
+}
+
+Dices::Dice Dices::inicializarDado() {
+  Dice dice;
+  std::uniform_real_distribution<float> fdist(-1.0f, 1.0f);
+  dice.position = glm::vec3{fdist(m_randomEngine),fdist(m_randomEngine),fdist(m_randomEngine)};
+
+  jogarDado(dice);
+
+  return dice;
+}
+
+void Dices::jogarDado(Dice &dice) {
+  alterarSpin(dice);
+
+  dice.DoTranslateAxis = {0, 0, 0};
+  std::uniform_int_distribution<int> idist(-1,1);
+  dice.DoTranslateAxis = {idist(m_randomEngine),idist(m_randomEngine), idist(m_randomEngine)};
+  dice.dadoGirando = true;
+}
+
+void Dices::update(float deltaTime) {
+  for(auto &dice : m_dices) {
+    if(dice.dadoGirando)
+    {
+      checkCollisions(dice);
+
+      dice.timeLeft -= deltaTime;
+      if(dice.DoRotateAxis.x)
+        dice.rotationAngle.x = glm::wrapAngle(dice.rotationAngle.x + glm::radians(dice.spinSpeed) * dice.timeLeft); 
+      if(dice.DoRotateAxis.y)
+        dice.rotationAngle.y = glm::wrapAngle(dice.rotationAngle.y + glm::radians(dice.spinSpeed) * dice.timeLeft); 
+      if(dice.DoRotateAxis.z)
+        dice.rotationAngle.z = glm::wrapAngle(dice.rotationAngle.z + glm::radians(dice.spinSpeed) * dice.timeLeft); 
+      if(dice.DoTranslateAxis.x != 0)
+        dice.position.x = dice.position.x + dice.spinSpeed * dice.timeLeft * dice.DoTranslateAxis.x * 0.001f; 
+      if(dice.DoTranslateAxis.y != 0)
+        dice.position.y = dice.position.y + dice.spinSpeed * dice.timeLeft * dice.DoTranslateAxis.y * 0.001f; 
+      if(dice.DoTranslateAxis.z != 0)
+        dice.position.z = dice.position.z + dice.spinSpeed * dice.timeLeft * dice.DoTranslateAxis.z * 0.001f;
+    }
+    if(dice.dadoGirando && dice.timeLeft <= 0){
+      dice.dadoGirando = false;
+    }
+  }
+}
+
+void Dices::alterarSpin(Dice &dice) {
+  std::uniform_real_distribution<float> fdist(1.0f, 5.0f);
+  dice.timeLeft = fdist(m_randomEngine);
+  dice.DoRotateAxis = {0, 0, 0};
+  std::uniform_int_distribution<int> idist(0,2);
+  dice.DoRotateAxis[idist(m_randomEngine)] = 1;
+}
+
+void Dices::checkCollisions(Dice &current_dice){
+  bool has_colision{false};
+
+  for(auto &dice : m_dices) {
+    if(&dice == &current_dice) continue;
+
+    const auto distance{
+      glm::distance(dice.position, current_dice.position)};
+
+    if (distance > 0.5f) continue;
+
+    if(!current_dice.dadoColidindo) {
+      current_dice.dadoColidindo = true;
+      current_dice.DoTranslateAxis *= -1;
+      has_colision = true;
+    }
+
+    if(!dice.dadoColidindo) {
+      dice.dadoColidindo = true;
+      dice.DoTranslateAxis = current_dice.DoTranslateAxis * (-1);
+      alterarSpin(dice);
+      dice.dadoGirando = true;
+    }
+  }
+  
+  if(!has_colision)
+  {
+    current_dice.dadoColidindo = false;
+  }
+  
+  if(current_dice.position.x > 2.5f){
+    current_dice.DoTranslateAxis.x = -1;
+    has_colision = true;}
+  else if(current_dice.position.x < -2.5f){
+    current_dice.DoTranslateAxis.x = 1;
+    has_colision = true;}
+  if(current_dice.position.y > 2.5f){
+    current_dice.DoTranslateAxis.y = -1;
+    has_colision = true;}
+  else if(current_dice.position.y < -2.5f){
+    current_dice.DoTranslateAxis.y = 1;
+    has_colision = true;}
+  if(current_dice.position.z > 2.5f){
+    current_dice.DoTranslateAxis.z = -1;
+    has_colision = true;}
+  else if(current_dice.position.z < -2.5f){
+    current_dice.DoTranslateAxis.z = 1;
+    has_colision = true;}
+
+  if(has_colision){
+    alterarSpin(current_dice);
+  }
 }

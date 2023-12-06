@@ -56,8 +56,8 @@ void Window::onCreate() {
   m_mappingMode = 0; // "From mesh" option
 
   // Initial trackball spin
-  // m_trackBallModel.setAxis(glm::normalize(glm::vec3(1, 1, 1)));
-  // m_trackBallModel.setVelocity(0.1f);
+  m_trackBallModel.setAxis(glm::normalize(glm::vec3(1, 1, 1)));
+  m_trackBallModel.setVelocity(0.1f);
 
   m_dices.create(quantity);
 }
@@ -120,7 +120,7 @@ void Window::onPaint() {
   abcg::glUniform4fv(IdLoc, 1, &m_Id.x);
   abcg::glUniform4fv(IsLoc, 1, &m_Is.x);
   
-  for(auto &dice : m_dices.dices){
+  for(auto &dice : m_dices.m_dices){
     dice.modelMatrix = glm::translate(m_modelMatrix, dice.position);
     dice.modelMatrix = glm::scale(dice.modelMatrix, glm::vec3(0.5f));
     dice.modelMatrix = glm::rotate(dice.modelMatrix, dice.rotationAngle.x, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -153,7 +153,7 @@ void Window::onPaintUI() {
 
     ImGui::PushItemWidth(200);
     if(m_gameData.m_input[static_cast<size_t>(Input::Roll)]){
-      for(auto &dice : m_dices.dices){
+      for(auto &dice : m_dices.m_dices){
         m_dices.jogarDado(dice);
       } 
     }
@@ -211,8 +211,5 @@ void Window::update() {
   m_projMatrix =
             glm::perspective(glm::radians(45.0f), aspect, 0.1f, 25.0f);
 
-  // abcg::glDisable(GL_CULL_FACE);
   abcg::glFrontFace(GL_CCW);
-
-  // m_dices.setupVAO(m_programs.at(m_currentProgramIndex));
 }
