@@ -62,26 +62,7 @@ void Window::onCreate() {
   m_dices.create(quantity);
 }
 
-void Window::loadModel(std::string_view path) {
-  auto const assetsPath{abcg::Application::getAssetsPath()};
-
-  m_dices.destroy();
-
-  m_dices.loadDiffuseTexture(assetsPath + "maps/dice.jpg");
-  m_dices.loadObj(path);
-  m_dices.setupVAO(m_programs.at(m_currentProgramIndex));
-  m_trianglesToDraw = m_dices.getNumTriangles();
-
-  // Use material properties from the loaded model
-  m_Ka = m_dices.getKa();
-  m_Kd = m_dices.getKd();
-  m_Ks = m_dices.getKs();
-  m_shininess = m_dices.getShininess();
-}
-
 void Window::onPaint() {
-  update();
-
   abcg::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   abcg::glViewport(0, 0, m_viewportSize.x, m_viewportSize.y);
@@ -141,6 +122,24 @@ void Window::onPaint() {
   }
 
   abcg::glUseProgram(0);
+
+  auto const aspect{gsl::narrow<float>(m_viewportSize.x) /
+                        gsl::narrow<float>(m_viewportSize.y)};
+  m_projMatrix =
+            glm::perspective(glm::radians(45.0f), aspect, 0.1f, 25.0f);
+
+  abcg::glFrontFace(GL_CCW);
+}
+
+void Window::onUpdate() {
+  m_modelMatrix = m_trackBallModel.getRotation();
+
+  m_viewMatrix =
+      glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f + m_zoom),
+                  glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+  const float deltaTime{static_cast<float>(getDeltaTime())};
+  m_dices.update(deltaTime);
 }
 
 void Window::onPaintUI() {
@@ -195,21 +194,20 @@ void Window::onDestroy() {
   }
 }
 
-void Window::update() {
-  const float deltaTime{static_cast<float>(getDeltaTime())};
+void Window::loadModel(std::string_view path) {
+  auto const assetsPath{abcg::Application::getAssetsPath()};
 
-  m_dices.update(deltaTime);
+  m_dices.destroy();
 
-  m_modelMatrix = m_trackBallModel.getRotation();
+  m_dices.loadDiffuseTexture(assetsPath + "maps/dice.jpg");
+  m_dices.loadObj(path);
+  m_dices.setupVAO(m_programs.at(m_currentProgramIndex));
+  m_trianglesToDraw = m_dices.getNumTriangles();
 
-  m_viewMatrix =
-      glm::lookAt(glm::vec3(0.0f, 0.0f, 5.0f + m_zoom),
-                  glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-
-  auto const aspect{gsl::narrow<float>(m_viewportSize.x) /
-                        gsl::narrow<float>(m_viewportSize.y)};
-  m_projMatrix =
-            glm::perspective(glm::radians(45.0f), aspect, 0.1f, 25.0f);
-
-  abcg::glFrontFace(GL_CCW);
+  // Use material properties from the loaded model
+  m_Ka = m_dices.getKa();
+  m_Kd = m_dices.getKd();
+  m_Ks = m_dices.getKs();
+  m_shininess = m_dices.getShininess();
 }
+

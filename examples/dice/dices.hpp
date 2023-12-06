@@ -53,7 +53,8 @@ class Dices {
       glm::vec3 position{0.0f};
       glm::vec3 rotationAngle{};
       float timeLeft{0.0f};
-      float spinSpeed{5.0f};
+      float spinSpeed{4.0f};
+      float decayRate{0.2f};
       bool dadoGirando{false};
       bool dadoColidindo{false};
       glm::ivec3 DoRotateAxis{};
@@ -80,8 +81,8 @@ class Dices {
     void jogarDado(Dice &);
     void alterarSpin(Dice&);
     void checkCollisions(Dice&);
-    void computeNormals(); //here
-    void createBuffers(); //here
+    void computeNormals();
+    void createBuffers();
 };
 
 #endif

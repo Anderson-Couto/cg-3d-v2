@@ -304,6 +304,7 @@ Dices::Dice Dices::inicializarDado() {
 }
 
 void Dices::jogarDado(Dice &dice) {
+
   alterarSpin(dice);
 
   dice.DoTranslateAxis = {0, 0, 0};
@@ -313,25 +314,29 @@ void Dices::jogarDado(Dice &dice) {
 }
 
 void Dices::update(float deltaTime) {
+  
   for(auto &dice : m_dices) {
+
+    dice.spinSpeed -= dice.decayRate * deltaTime;
+    dice.spinSpeed = std::max(dice.spinSpeed, 0.0f);
+
     if(dice.dadoGirando)
     {
       checkCollisions(dice);
 
       dice.timeLeft -= deltaTime;
-      if(dice.DoRotateAxis.x)
-        dice.rotationAngle.x = glm::wrapAngle(dice.rotationAngle.x + glm::radians(dice.spinSpeed) * dice.timeLeft); 
-      if(dice.DoRotateAxis.y)
-        dice.rotationAngle.y = glm::wrapAngle(dice.rotationAngle.y + glm::radians(dice.spinSpeed) * dice.timeLeft); 
-      if(dice.DoRotateAxis.z)
-        dice.rotationAngle.z = glm::wrapAngle(dice.rotationAngle.z + glm::radians(dice.spinSpeed) * dice.timeLeft); 
-      if(dice.DoTranslateAxis.x != 0)
-        dice.position.x = dice.position.x + dice.spinSpeed * dice.timeLeft * dice.DoTranslateAxis.x * 0.001f; 
-      if(dice.DoTranslateAxis.y != 0)
-        dice.position.y = dice.position.y + dice.spinSpeed * dice.timeLeft * dice.DoTranslateAxis.y * 0.001f; 
-      if(dice.DoTranslateAxis.z != 0)
-        dice.position.z = dice.position.z + dice.spinSpeed * dice.timeLeft * dice.DoTranslateAxis.z * 0.001f;
+
+      for (auto const i: iter::range<int>(dice.DoRotateAxis.length()) )
+      {
+        if(dice.DoRotateAxis[i]) 
+          dice.rotationAngle[i] = glm::wrapAngle(dice.rotationAngle[i] + glm::radians(dice.spinSpeed) * dice.timeLeft);
+
+        if(dice.DoTranslateAxis[i] != 0)
+          dice.position[i] = dice.position[i] + dice.spinSpeed * dice.timeLeft * dice.DoTranslateAxis[i] * 0.0025f;   
+      }
+
     }
+
     if(dice.dadoGirando && dice.timeLeft <= 0){
       dice.dadoGirando = false;
     }
@@ -350,12 +355,13 @@ void Dices::checkCollisions(Dice &current_dice){
   bool has_colision{false};
 
   for(auto &dice : m_dices) {
+
     if(&dice == &current_dice) continue;
 
     const auto distance{
       glm::distance(dice.position, current_dice.position)};
 
-    if (distance > 0.5f) continue;
+    if (distance > 1.0f) continue;
 
     if(!current_dice.dadoColidindo) {
       current_dice.dadoColidindo = true;
@@ -375,26 +381,19 @@ void Dices::checkCollisions(Dice &current_dice){
   {
     current_dice.dadoColidindo = false;
   }
-  
-  if(current_dice.position.x > 2.5f){
-    current_dice.DoTranslateAxis.x = -1;
-    has_colision = true;}
-  else if(current_dice.position.x < -2.5f){
-    current_dice.DoTranslateAxis.x = 1;
-    has_colision = true;}
-  if(current_dice.position.y > 2.5f){
-    current_dice.DoTranslateAxis.y = -1;
-    has_colision = true;}
-  else if(current_dice.position.y < -2.5f){
-    current_dice.DoTranslateAxis.y = 1;
-    has_colision = true;}
-  if(current_dice.position.z > 2.5f){
-    current_dice.DoTranslateAxis.z = -1;
-    has_colision = true;}
-  else if(current_dice.position.z < -2.5f){
-    current_dice.DoTranslateAxis.z = 1;
-    has_colision = true;}
 
+  for (auto const i: iter::range<int>(current_dice.position.length()) )
+  {
+    if(current_dice.position[i] > 5.0f){
+      current_dice.DoTranslateAxis[i] = -1;
+      has_colision = true;
+    }
+    else if(current_dice.position[i] < -5.0f){
+      current_dice.DoTranslateAxis[i] = 1;
+      has_colision = true;
+    }
+  }
+  
   if(has_colision){
     alterarSpin(current_dice);
   }

@@ -13,6 +13,7 @@ class Window : public abcg::OpenGLWindow {
   void onEvent(SDL_Event const &event) override;
   void onCreate() override;
   void onPaint() override;
+  void onUpdate() override;
   void onPaintUI() override;
   void onResize(glm::ivec2 const &size) override;
   void onDestroy() override;
@@ -50,7 +51,6 @@ class Window : public abcg::OpenGLWindow {
   float m_shininess{};
 
   void loadModel(std::string_view path);
-  void update();
 };
 
 #endif
